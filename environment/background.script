@@ -1,0 +1,184 @@
+local WIDTH = tonumber(sys.get_config("display.width"))
+local HEIGHT = tonumber(sys.get_config("display.height"))
+local MAPHEIGHT = 1130 -- 192 -- 1130 
+local MAPWIDTH = 640 -- 32 * 4-- 640
+
+local MAX_SEGMENTS = 1
+
+function init(self)
+	self.segments_url = {}
+	self.segments = {}
+
+	self.center_index_x = 0
+	self.center_index_y = 0
+end
+
+function is_segment_in_table(table, segment)
+	for i, s in ipairs(table) do
+		if segment["index_x"] == s["x"] and segment["index_y"] == s["y"] then
+			return true, i
+		end
+	end 
+	return false, -1
+end
+
+function is_new_segment_exist(table, segment)
+	for i, s in ipairs(table) do
+		if segment["x"] == s["index_x"] and s["index_y"] == segment["y"] then
+			return true, i
+		end
+	end 
+	return false, -1
+end
+
+function updatemaps(self, new_center_x, new_center_y) 
+	-- pprint("[UPDATEMAPS] ------------------------------------------")
+	-- pprint(self.segments)
+	-- print("new center: ".. new_center_x .. " | " .. new_center_y)
+
+	local segments_to_overwrite = {}
+
+	local segments_to_keep = {}
+	
+	if new_center_x ~= self.center_index_x or new_center_y ~= self.center_index_y  then	
+		local new_segment_range = {}
+		for x = -1, 1, 1 do 
+			for y = -1, 1, 1 do 
+				table.insert(new_segment_range, {x = new_center_x + x, y = new_center_y + y})
+			end
+		end
+		
+		for i, s in ipairs(self.segments) do
+			local keep, index = is_segment_in_table(new_segment_range, s)
+			if not keep then
+				go.delete(s["segment"])
+				table.insert(segments_to_overwrite, i)
+			else 
+				table.insert(segments_to_keep, s)
+			end
+		end
+
+		self.segments = segments_to_keep
+
+		for i, s in ipairs(new_segment_range) do
+			local exists, index = is_new_segment_exist(self.segments, s)
+			if not exists then
+				spawn_random_segment(self, s["x"], s["y"])
+			end
+		end		
+	end
+
+	self.center_index_x = new_center_x
+	self.center_index_y = new_center_y
+	
+	--[[
+	local segments_to_overwrite = {}
+	local x_to_create = new_center_x
+	local y_to_create = new_center_y
+
+	if new_center_x ~= self.center_index_x then
+		local x_to_remove = new_center_x + (self.center_index_x - new_center_x) * 2
+		x_to_create = new_center_x - (self.center_index_x - new_center_x)
+		
+		for i, s in ipairs(self.segments) do
+			if s ~= {} and s["index_x"] == x_to_remove then
+				go.delete(s["segment"])
+				table.insert(segments_to_overwrite, i)
+			end
+		end	
+
+		local y = y_to_create - 1
+
+		for k, i in ipairs(segments_to_overwrite) do
+			spawn_random_segment(self, x_to_create, y, i)
+			y = y + 1
+		end
+	end
+
+	if new_center_y ~= self.center_index_y then
+		local y_to_remove = new_center_y + (self.center_index_y - new_center_y) * 2
+		y_to_create = new_center_y - (self.center_index_y - new_center_y)
+
+		local segments_to_remove = {}
+
+		for i, s in ipairs(self.segments) do
+			if s ~= {} and s["index_y"] == y_to_remove then
+				go.delete(s["segment"])
+				table.insert(segments_to_overwrite, i)
+			end
+		end	
+
+		local x = x_to_create - 1
+
+		for k, i in ipairs(segments_to_overwrite) do
+			spawn_random_segment(self, x, y_to_create, i)
+			x = x + 1
+		end
+	end
+
+	-- pprint(segments_to_overwrite)
+
+	
+	
+
+	print("create x: " .. x_to_create)
+	
+	self.center_index_x = new_center_x
+	self.center_index_y = new_center_y
+	-- pprint(self.segments)
+	]]
+end
+
+function update(self, dt)
+	local player = go.get_position("controllerCollection:/game/player")
+	local px = player.x
+	local py = player.y
+
+	local index_x = math.floor(px / MAPWIDTH)
+	local index_y = math.floor(py / MAPHEIGHT)
+
+	if (self.center_index_x ~= index_x or self.center_index_y ~= index_y) then
+		-- nichtmehr im mittleren mapsegment
+		updatemaps(self, index_x, index_y)
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end
+
+function spawn_random_segment(self, index_x, index_y, insert_index) 
+	local random = math.random(1, #self.segments_url)
+
+	x = index_x * MAPWIDTH
+	y = index_y * MAPHEIGHT
+	
+	local segment = collectionfactory.create(self.segments_url[random], vmath.vector3(x, y, 0), nil, { }, 1)	
+	if insert_index then	
+		table.insert(self.segments, insert_index, {segment = segment, index_x = index_x, index_y = index_y, x = x, y = y})
+	else
+		table.insert(self.segments, {segment = segment, index_x = index_x, index_y = index_y, x = x, y = y})
+		-- pprint("INSERT WITHOUT INDEX")
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("register_segment") then
+		table.insert(self.segments_url, message.url)
+		-- pprint(self.segments_url)
+	end
+	spawn_random_segment(self, -1, 1)
+	spawn_random_segment(self, -1, 0)
+	spawn_random_segment(self, -1, -1)
+	spawn_random_segment(self, 0, 1)
+	spawn_random_segment(self, 0, 0)
+	spawn_random_segment(self, 0, -1)
+	spawn_random_segment(self, 1, 1)
+	spawn_random_segment(self, 1, 0)
+	spawn_random_segment(self, 1, -1)
+	
+	-- pprint(self.segments)
+
+	-- go.delete(self.segments[1]["segment"])
+end

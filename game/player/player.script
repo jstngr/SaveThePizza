@@ -1,0 +1,231 @@
+local rendercam = require("rendercam.rendercam")
+
+local COLLISION_RESPONSE = hash("collision_response")
+
+local UP = hash("up")
+local LEFT = hash("left")
+local RIGHT = hash("right")
+local FIRE = hash("fire")
+local TOUCH = hash("touch")
+
+
+local MAX_SPEED = 200
+local MIN_SPEED = 50
+local ROTATION_ACCELERATION = math.rad(380)
+local MAX_ROTATION_SPEED = math.rad(300)
+local TURN_DECELERATION = 50	-- when turning
+local DECELERATION = 250		-- when not thrusting
+local ACCELERATION = 175
+
+local UNITVECTOR_Z = vmath.vector3(0, 0, 1)
+local UNITVECTOR_UP = vmath.vector3(0, 1, 0)
+
+
+go.property("angular_velocity", 5)
+go.property("linear_velocity", 220)
+go.property("MAX_SPEED", 220)--rotation
+go.property("ROTATION_SLERP", 0.1)--0.08)
+
+-- DEBUG
+local mouse_x = 0
+local mouse_y = 0
+
+-----------------------------------
+-- Debug functions
+-----------------------------------
+
+local function draw_debug_square(x, y)	
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y + 10, 0), 
+	end_point = vmath.vector3(x + 10, y - 10, 0), color = vmath.vector4(1,1,1,1)})
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x - 10, y + 10, 0), 
+	end_point = vmath.vector3(x - 10, y - 10, 0), color = vmath.vector4(1,1,1,1)})	
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y + 10, 0), 
+	end_point = vmath.vector3(x - 10, y + 10, 0), color = vmath.vector4(1,1,1,1)})	
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y - 10, 0), 
+	end_point = vmath.vector3(x - 10, y - 10, 0), color = vmath.vector4(1,1,1,1)})		
+end
+
+local function draw_debug_cross(x, y)	
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y + 10, 0), 
+	end_point = vmath.vector3(x + 10, y - 10, 0), color = vmath.vector4(1,0,1,1)})
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x - 10, y + 10, 0), 
+	end_point = vmath.vector3(x - 10, y - 10, 0), color = vmath.vector4(1,0,1,1)})	
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y + 10, 0), 
+	end_point = vmath.vector3(x - 10, y + 10, 0), color = vmath.vector4(1,0,1,1)})	
+
+	msg.post("@render:", "draw_line", 
+	{start_point = vmath.vector3(x + 10, y - 10, 0), 
+	end_point = vmath.vector3(x - 10, y - 10, 0), color = vmath.vector4(1,0,1,1)})		
+end
+
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+
+	-- print(msg.url())
+
+	local angle = math.atan2(0, 0)
+	self.direction = vmath.quat_rotation_z(angle)
+	self.speed = MAX_SPEED
+
+	self.input = ''
+
+	self.debug_x = 0
+	self.debug_y = 0
+
+	self.input_start_pos = vmath.vector3()
+	self.input_current_pos = vmath.vector3()
+
+	self.quat_to_north = vmath.quat_rotation_z(math.rad(0)) 
+
+	particlefx.play("#footstep")
+
+end
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	local pos = go.get_position()
+
+	-- debug
+	--msg.post("@render:", "draw_text", { text = "Position X: " .. self.input_current_pos.x, position = vmath.vector3(50, 200, 0)})
+	--msg.post("@render:", "draw_text", { text = "Position Y: " .. self.input_current_pos.y, position = vmath.vector3(50, 180, 0)})
+	
+	--draw_debug_square(self.input_current_pos.x, self.input_current_pos.y)
+
+	--draw_debug_cross(self.input_start_pos.x, self.input_start_pos.y)
+
+	local rotation = go.get_rotation()
+
+	if self.touch then
+
+		local target_position = rendercam.screen_to_world_2d(self.touch.screen_x, self.touch.screen_y)
+		
+		local position = go.get_position()
+
+		-- rotate and move towards player
+		local pos = go.get_world_position()
+		local target_angle = -math.atan2(target_position.x - pos.x, target_position.y - pos.y)
+		local target_quat = vmath.quat_rotation_z(target_angle)
+		local current_quat = go.get_rotation()
+
+		local q = vmath.slerp(self.ROTATION_SLERP, current_quat, target_quat)
+		go.set_rotation(q)
+		local d = vmath.rotate(q, vmath.vector3(0, 1, 0))
+		go.set_position(pos + d * self.speed * dt)
+
+		-- move shadow
+		--go.set_position(vmath.vector3(50, 0, 0), "controllerCollection:/game/shadow#shadow")
+		--pprint(go.get_rotation())
+
+		
+		--go.set_position(vmath.vector3(rot.z * 10, rot.w * 10, 0), "controllerCollection:/game/shadow#shadow") -- inverse parent rotation * rotation to north = local rotation
+
+
+		
+		--[[
+		local touch_pos = rendercam.screen_to_world_2d(self.touch.screen_x, self.touch.screen_y)
+		local to = self.input_start_pos
+		to = go.get_position()
+		-- local from = vmath.vector3(self.touch.screen_x, self.touch.screen_y, 0)
+
+		local direction = vmath.vector3(to.x - touch_pos.x, touch_pos.y - to.y, 0)
+		--direction = vmath.normalize(direction)
+		
+		if(vmath.length(touch_pos - to) > 50) then
+			local angle = math.atan2(direction.x, direction.y)
+			rotation = vmath.quat_rotation_z(angle)
+			go.set_rotation(rotation)
+			self.touch = nil
+		end
+		]]
+	else
+		--move in direction of rotation
+		local pos = go.get_position()
+		local distance = self.linear_velocity * dt
+		local direction = vmath.rotate(rotation, vmath.vector3(0, distance, 0))
+		pos = pos + direction
+		go.set_position(pos)
+	end
+
+	local parent_quat = go.get_rotation("player")
+	local shadow_d = vmath.rotate(vmath.conj(parent_quat) * self.quat_to_north, vmath.vector3(0, 1, 0))
+	go.set_position(shadow_d * -4, "controllerCollection:/game/shadow#shadow")
+end
+
+function on_message(self, message_id, message, sender)
+	--[[if message_id == COLLISION_RESPONSE then
+		if message.group == GROUP_GROUND then
+			take_damage(self, self.health)
+		elseif message.group == GROUP_ENEMYBULLET then
+			take_damage(self, 1)
+			go.delete(message.other_id)
+		end
+	end 
+	]]    
+	if message_id == COLLISION_RESPONSE then
+		print("playercollide2")
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == TOUCH and not action.pressed and not action.released then
+		--pprint(action)
+		--[[
+		self.input_current_pos.x = action.screen_x
+		self.input_current_pos.y = action.screen_y
+		self.input_current_pos.z = 0
+		
+		local input_direction = self.input_start_pos - self.input_current_pos
+
+		if(vmath.length(input_direction) <= 0) then
+			input_direction = vmath.vector3(0, 0, 0)
+			return
+		else 
+			input_direction = vmath.normalize(input_direction)
+		end	
+
+		pprint(input_direction)		
+		]]
+		self.touch = action
+	end
+	
+	if action_id == TOUCH and action.pressed then
+		-- pprint("PRESS")
+		local pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
+		
+		self.input_start_pos.x = pos.x
+		self.input_start_pos.y = pos.y
+		self.input_current_pos.x = pos.x
+		self.input_current_pos.y =  pos.y
+		-- pprint(self.input_start_pos)
+	end
+
+	if action_id == TOUCH and action.released then
+		-- pprint("RELEASE")
+		--self.touch = nil
+	end
+
+	
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end
+
+

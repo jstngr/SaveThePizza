@@ -1,0 +1,68 @@
+images {
+  image: "/assets/enemy/enemy_red_shadow.png"
+}
+animations {
+  id: "enemy_red"
+  images {
+    image: "/assets/enemy/enemy_red001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red002.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red002.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red003.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red003.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_red001.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 24
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "enemy_fat"
+  images {
+    image: "/assets/enemy/enemy_fat001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat002.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat002.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat001.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat003.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat003.png"
+  }
+  images {
+    image: "/assets/enemy/enemy_fat001.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 24
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

@@ -1,0 +1,4 @@
+function init(self)
+	-- Register segment with the controller
+	msg.post("controllerCollection:/game/background/backgroundController#background", "register_segment", { url = msg.url("#segment1Factory"), id = go.get_id() })
+end

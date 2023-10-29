@@ -1,0 +1,74 @@
+images {
+  image: "/assets/player/particleFX_feet001.png"
+}
+images {
+  image: "/assets/player/particleFX_feet002.png"
+}
+images {
+  image: "/assets/player/pizza_boy_shadow.png"
+}
+animations {
+  id: "pizza_guy"
+  images {
+    image: "/assets/player/pizza_boy001.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy002.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy002.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy001.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy001.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy003.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy003.png"
+  }
+  images {
+    image: "/assets/player/pizza_boy001.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 24
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "feet"
+  images {
+    image: "/assets/player/feet000.png"
+  }
+  images {
+    image: "/assets/player/feet001.png"
+  }
+  images {
+    image: "/assets/player/feet002.png"
+  }
+  images {
+    image: "/assets/player/feet003.png"
+  }
+  images {
+    image: "/assets/player/feet004.png"
+  }
+  images {
+    image: "/assets/player/feet005.png"
+  }
+  images {
+    image: "/assets/player/feet006.png"
+  }
+  images {
+    image: "/assets/player/feet007.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 24
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+margin: 0
+extrude_borders: 1
+inner_padding: 0

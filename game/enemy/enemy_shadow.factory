@@ -1,0 +1,2 @@
+prototype: "/game/enemy/enemy_shadow.go"
+load_dynamically: false
